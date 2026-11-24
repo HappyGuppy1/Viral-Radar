@@ -56,6 +56,13 @@ export async function ara(sorgu, sira = 'izlenme', tarih = 'ay', sure = 'hepsi',
 }
 
 // ---------------------------------------------------------------- 2) kanal sayfası
+const BIRIM = { second: 1, minute: 60, hour: 3600, day: 86400, week: 7 * 86400, month: 30 * 86400, year: 365 * 86400 };
+/** "2 weeks ago", "Streamed 3 days ago" → yaklaşık yayın zamanı (Unix sn). yt-dlp approximate_date ile aynı yaklaşım. */
+export function goreceliZaman(metinIfade, simdi = Date.now() / 1000) {
+  const m = String(metinIfade || '').match(/(\d+)\s*(second|minute|hour|day|week|month|year)s?\s+ago/i);
+  return m ? Math.round(simdi - Number(m[1]) * BIRIM[m[2].toLowerCase()]) : null;
+}
+
 function lockupVideo(n) {
   // Yeni kanal ızgarası (LockupView), eski (Video/GridVideo) ve Shorts (ShortsLockupView / ReelItem)
   if (n.type === 'LockupView') {
@@ -66,6 +73,7 @@ function lockupVideo(n) {
       id: n.content_id, baslik: metin(n.metadata?.title),
       izlenme: sayiOku(parcalar.find(p => /view/i.test(p))),
       yayin: parcalar.find(p => /ago|önce/i.test(p)) || null,
+      zaman: goreceliZaman(parcalar.find(p => /ago/i.test(p))),
       sure: rozet ? rozet.split(':').reduce((a, x) => a * 60 + Number(x), 0) : null,
     };
   }
@@ -76,7 +84,7 @@ function lockupVideo(n) {
   if (n.type === 'ReelItem') return { id: n.id, baslik: metin(n.title), izlenme: sayiOku(metin(n.views)), yayin: null, sure: null };
   if (n.id && n.title) {
     return { id: n.video_id || n.id, baslik: metin(n.title), izlenme: sayiOku(metin(n.view_count) || metin(n.short_view_count)),
-      yayin: metin(n.published) || null, sure: n.duration?.seconds ?? null };
+      yayin: metin(n.published) || null, zaman: goreceliZaman(metin(n.published)), sure: n.duration?.seconds ?? null };
   }
   return null;
 }
