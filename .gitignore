@@ -1,0 +1,11 @@
+# bağımlılıklar ve derleme çıktısı
+/node_modules/
+/dist/
+# kullanıcı verisi asla depoya girmez (program bunu Belgeler\Viral Radar'a yazar)
+/Ayarlar/
+/Veri/
+/Onbellek/
+/Kayitlar/
+api-hesaplari.txt
+*.log
+.env

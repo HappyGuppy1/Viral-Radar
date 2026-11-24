@@ -1,0 +1,54 @@
+{
+  "name": "viral-radar",
+  "version": "0.1.0",
+  "description": "Küçük kanallarda patlayan YouTube videolarını ve kanalları bulan, kanalları analiz eden masaüstü aracı",
+  "main": "src/main.js",
+  "scripts": {
+    "baslat": "electron .",
+    "sunucu": "node src/gelistirici.js",
+    "paketle": "electron-builder --win nsis"
+  },
+  "type": "module",
+  "dependencies": {
+    "youtubei.js": "^18.3.0"
+  },
+  "devDependencies": {
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0"
+  },
+  "productName": "Viral Radar",
+  "author": "HappyGuppy1",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HappyGuppy1/Viral-Radar.git"
+  },
+  "build": {
+    "appId": "com.happyguppy1.viralradar",
+    "productName": "Viral Radar",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "src/arayuz/viral-radar.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Viral Radar",
+      "artifactName": "Viral-Radar-Setup-${version}.exe",
+      "installerIcon": "src/arayuz/viral-radar.ico",
+      "uninstallerIcon": "src/arayuz/viral-radar.ico",
+      "language": "1055",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
