@@ -234,7 +234,7 @@ async function post(u, g, kapat) {
     return yanit(200, isBaslat({}, async (_, ilerleme) => {
       const yolu = path.join(DOSYA.taramalar, ad), d = jsonOku(yolu);
       if (!d.analiz?.baslik) throw new Error('Bu taramada başlık analizi yok; derin analiz için yeniden tara');
-      ilerleme('gemini', 10, 'Patlayan ve normal başlıklar yapay zekâya gönderildi. EVREN ile 2–5 dk sürebilir');
+      ilerleme('gemini', 10, 'Patlayan ve normal başlıklar yapay zekâya gönderildi. Yanıt birkaç dakika sürebilir');
       d.analiz.baslik.gemini = await videoAnaliz.baslikGemini(d);
       fs.writeFileSync(yolu, JSON.stringify(d, null, 1), 'utf8');
       return ad;

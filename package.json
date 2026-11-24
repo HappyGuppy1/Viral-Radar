@@ -1,6 +1,6 @@
 {
   "name": "viral-radar",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Küçük kanallarda patlayan YouTube videolarını ve kanalları bulan, kanalları analiz eden masaüstü aracı",
   "main": "src/main.js",
   "scripts": {

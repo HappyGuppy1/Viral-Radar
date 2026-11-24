@@ -300,7 +300,7 @@ export function yukle(dosya) {
 /** Başlık sekmesindeki yapay zekâ derin analizi (sunucu işi); sonucu analiz dosyasına kaydeder. */
 export async function baslikGemini(p, ilerleme = () => {}) {
   const d = yukle(p.dosya);
-  ilerleme('gemini', 10, `${d.genel.ad}: başlıklar yapay zekâya gönderildi (formül, alt konu, tetikleyici). EVREN ile 2–5 dk sürebilir`);
+  ilerleme('gemini', 10, `${d.genel.ad}: başlıklar yapay zekâya gönderildi (formül, alt konu, tetikleyici). Yanıt birkaç dakika sürebilir`);
   d.baslik.gemini = await baslikAnaliz.geminiAnaliz(d);
   fs.writeFileSync(yol(p.dosya), JSON.stringify(d), 'utf8');
   return p.dosya;

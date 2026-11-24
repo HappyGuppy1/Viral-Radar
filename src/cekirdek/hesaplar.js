@@ -38,7 +38,7 @@ export const HIZMETLER = {
   evren: {
     label: 'EVREN (DeepSeek)',
     kullanim: 'Aynı yapay zekâ işleri. Model: yalnızca **deepseek-v4.1-flash** (başka modele geçmez). ' +
-      'Yavaştır: istek sırada bekleyebildiği için tek yanıt 20 sn – 3 dk sürebilir.',
+      'Yavaştır: düşünerek yanıtladığı için büyük isteklerde tek yanıt 10 dakikayı bulabilir.',
     link: 'https://evren.ssyz.org.tr/',
     adimlar: "evren.ssyz.org.tr → kayıt ol / giriş yap → **API anahtarı** oluştur → token'ı kopyala (`evr` ile başlar). " +
       'Açık modelleri (DeepSeek, Qwen, GLM) OpenAI uyumlu API ile sunar. Kalan kredi test satırında görünür.',
@@ -204,7 +204,7 @@ async function evrenUret(istem, sicaklik) {
     // 429 = EVREN "çok fazla istek, biraz bekle" diyor (eşzamanlı paketlerde olur): aynı hesap, aynı modelle bekleyip yeniden dene
     for (const bekle of [0, 5000, 15000]) {
       if (bekle) await new Promise(c => setTimeout(c, bekle));
-      try { r = await evrenIstek('chat/completions', token, govde, 420_000); }
+      try { r = await evrenIstek('chat/completions', token, govde, 900_000); }
       catch (h) { sonHata = `EVREN ${ad}/${EVREN_MODEL}: ${String(h.message).slice(0, 100)}`; gec = true; break; }
       if (r.status !== 429) break;
       sonHata = `EVREN ${ad}/${EVREN_MODEL}: HTTP 429 (çok fazla istek; bekleyip yeniden denendi)`;

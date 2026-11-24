@@ -388,7 +388,7 @@ function yapayZekaVerisi(d, adet = 160) {
 
 export async function baslikGemini(p, ilerleme = () => {}) {
   const d = yukle(p.dosya);
-  ilerleme('gemini', 10, `${d.ad}: ${d.genel.kanal} kanalın başlıkları yapay zekâya gönderildi. EVREN ile 2–5 dk sürebilir`);
+  ilerleme('gemini', 10, `${d.ad}: ${d.genel.kanal} kanalın başlıkları yapay zekâya gönderildi. Yanıt birkaç dakika sürebilir, sayfadan ayrılma`);
   d.baslik.gemini = await baslikAnaliz.geminiAnaliz(yapayZekaVerisi(d));
   delete d.bulgular;
   fs.writeFileSync(yol(p.dosya), JSON.stringify(d), 'utf8');

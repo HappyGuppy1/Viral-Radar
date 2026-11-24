@@ -222,7 +222,7 @@ export async function kanalAra(parametre, ilerleme = () => {}, iptal = { iptal: 
   // 5) konuyla ilgi: yapay zekâ ya da kelime yöntemi
   istat.ilgi_yontemi = 'kelime';
   if (p.gemini_dogrula && sonuc.length) {
-    ilerleme('gemini', 90, `${sonuc.length} kanal yapay zekâ ile değerlendiriliyor (ad, açıklama, başlıklar). EVREN ile birkaç dakika sürebilir`);
+    ilerleme('gemini', 90, `${sonuc.length} kanal yapay zekâ ile değerlendiriliyor (ad, açıklama, başlıklar). Birkaç dakika sürebilir`);
     try {
       const kararlar = await yzIlgi(sonuc, p.sorgular, p.ceviriler, ilerleme, p.genisleme);
       for (const a of sonuc) { const k = kararlar[a.id]; if (k) Object.assign(a, { gemini_ilgili: k.ilgili, gemini_puan: k.puan, gemini_neden: k.neden }); }
