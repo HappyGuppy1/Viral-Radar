@@ -94,7 +94,7 @@ async function kanal(kanalId) {
   const yt = await istemci('en');
   if (!kanalNesneleri.has(kanalId)) {
     kanalNesneleri.set(kanalId, yt.getChannel(kanalId));
-    setTimeout(() => kanalNesneleri.delete(kanalId), 10 * 60 * 1000);
+    setTimeout(() => kanalNesneleri.delete(kanalId), 10 * 60 * 1000).unref?.(); // süreci açık tutmasın
   }
   return kanalNesneleri.get(kanalId);
 }
@@ -129,6 +129,60 @@ export async function kanalSekmesi(kanalId, sekme = 'videos', n = 30) {
   return { ...kanalBasligi(k), videolar };
 }
 
+/** Kanal girdisi (@handle, kanal linki, UC… kimliği ya da video linki) → kanal kimliği. */
+export async function kanalCoz(girdi) {
+  let g = String(girdi || '').trim();
+  if (!g) throw new Error('Kanal linki veya @handle gerekli');
+  if (/^UC[\w-]{22}$/.test(g)) return g;
+  const yt = await istemci('en');
+  if (/^https?:\/\//.test(g) || g.includes('youtube.com') || g.includes('youtu.be')) {
+    if (!g.startsWith('http')) g = 'https://' + g;
+    const m = g.match(/youtube\.com\/channel\/(UC[\w-]{22})/);
+    if (m) return m[1];
+    const vid = g.match(/(?:v=|youtu\.be\/|shorts\/|live\/)([\w-]{11})/);
+    if (vid) return (await yt.getBasicInfo(vid[1])).basic_info.channel_id; // video linki → kanalı
+  } else {
+    g = 'https://www.youtube.com/' + (g.startsWith('@') ? g : '@' + g);
+  }
+  const r = await yt.resolveURL(g);
+  const id = r?.payload?.browseId;
+  if (!id?.startsWith('UC')) throw new Error('Kanal bulunamadı. Linki veya @handle\'ı kontrol et.');
+  return id;
+}
+
+/** Bir sekmenin tüm videoları (en fazla n; kesim verilirse o zamandan eski ilk videoda durur). sekme: videos | shorts | streams */
+export async function kanalTumSekme(kanalId, sekme = 'videos', n = 2000, kesim = null) {
+  const k = await kanal(kanalId);
+  let sayfa;
+  try { sayfa = sekme === 'shorts' ? await k.getShorts() : sekme === 'streams' ? await k.getLiveStreams() : await k.getVideos(); }
+  catch { return { ...kanalBasligi(k), videolar: [] }; } // sekme yok
+  const videolar = [], gorulen = new Set();
+  for (let i = 0; i < 200 && videolar.length < n; i++) {
+    let dur = false;
+    for (const node of sayfa.videos || []) {
+      const v = lockupVideo(node);
+      if (!v?.id || gorulen.has(v.id)) continue;
+      gorulen.add(v.id);
+      videolar.push(v);
+      if (kesim && v.zaman && v.zaman < kesim) { dur = true; break; }
+      if (videolar.length >= n) break;
+    }
+    if (dur || videolar.length >= n || !sayfa.has_continuation) break;
+    try { sayfa = await sayfa.getContinuation(); } catch { break; }
+  }
+  return { ...kanalBasligi(k), videolar };
+}
+
+/** En beğenilen yorumlar: kanal sahibinin ve sabitlenmiş yorumlar atlanır (genelde kendi reklamı). */
+export async function yorumlar(videoId, adet = 20) {
+  try {
+    const yt = await istemci('en');
+    const c = await yt.getComments(videoId, 'TOP_COMMENTS');
+    return (c.contents || []).map(t => t.comment).filter(x => x && !x.author_is_channel_owner && !x.is_pinned)
+      .slice(0, adet).map(x => ({ metin: metin(x.content).slice(0, 500), begeni: sayiOku(x.like_count) || 0 }));
+  } catch { return []; }
+}
+
 /** Kanalın "Hakkında" bilgisi: ülke (İngilizce ad), katılım, toplam izlenme, açıklama. */
 export async function kanalHakkinda(kanalId) {
   const k = await kanal(kanalId);
@@ -141,6 +195,8 @@ export async function kanalHakkinda(kanalId) {
     abone: sayiOku(metin(m.subscriber_count)),
     video_sayisi: sayiOku(metin(m.video_count)),
     aciklama: (metin(m.description) || '').slice(0, 600),
+    aciklama_tam: metin(m.description) || '',
+    linkler: (m.links || []).map(l => metin(l.link) || metin(l.title)).filter(Boolean).slice(0, 12),
   };
 }
 
@@ -164,7 +220,14 @@ export async function videoBilgisi(videoId) {
     kategori: mf.category || b.category || null,
     canli: !!(b.is_live || b.is_live_content || b.is_post_live_dvr),
     etiketler: (b.keywords || []).slice(0, 15),
+    etiketler_tum: (b.keywords || []).slice(0, 40),
     aciklama: (b.short_description || '').slice(0, 600),
+    aciklama_tam: (b.short_description || '').slice(0, 4000),
+    // "en çok tekrar izlenen anlar": 100 noktalık yoğunluk (0–1)
+    isi: (info.heat_map?.heat_markers || []).map(m => Math.round((m.heat_marker_intensity_score_normalized || 0) * 1000) / 1000),
+    // bölümler (chapters): açıklamadaki zaman damgalı satırlar (YouTube bölümleri de buradan üretir)
+    bolum: ((b.short_description || '').match(/^\s*\(?\d{1,2}:\d{2}(?::\d{2})?\)?\s+\S/gm) || []).length >= 3
+      ? (b.short_description.match(/^\s*\(?\d{1,2}:\d{2}(?::\d{2})?\)?\s+\S/gm) || []).length : 0,
     kanal_id: b.channel_id || null,
     kanal: b.author || null,
   };

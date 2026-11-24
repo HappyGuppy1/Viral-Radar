@@ -9,6 +9,8 @@ import * as motor from './cekirdek/motor.js';
 import * as hesaplar from './cekirdek/hesaplar.js';
 import * as videoAnaliz from './cekirdek/video_analiz.js';
 import * as kanalAra from './cekirdek/kanal_ara.js';
+import * as kanal from './cekirdek/kanal.js';
+import * as baslikAnaliz from './cekirdek/baslik_analiz.js';
 import { sorguCevirileri } from './cekirdek/ceviri.js';
 import { hepsiniKaydet } from './cekirdek/onbellek.js';
 import { ARAMA_DILLERI, dosyaDamgasi, slug } from './cekirdek/metin.js';
@@ -150,7 +152,7 @@ function mdYap(d) {
 }
 
 // ---------------------------------------------------------------- yönlendirme
-const HENUZ_YOK = { hata: 'Bu bölüm yeni sürüme henüz taşınmadı (Kanal analizi ve Kanal karşılaştır sıradaki aşamada).' };
+const HENUZ_YOK = { hata: 'Bu bölüm yeni sürüme henüz taşınmadı (Kanal karşılaştır sıradaki aşamada).' };
 const yanit = (kod, govde, tur = 'application/json; charset=utf-8', ek = {}) => ({ kod, govde, tur, ek });
 
 async function get(u) {
@@ -181,8 +183,15 @@ async function get(u) {
   if (yol === '/api/hesaplar') return yanit(200, hesaplar.liste());
   if (yol === '/api/kanal-ara/gecmis') return yanit(200, kanalAra.gecmis());
   if (yol === '/api/kanal-ara/yukle') return yanit(200, kanalAra.yukle(q.get('dosya')));
-  if (['/api/kanal/gecmis', '/api/grup/gecmis'].includes(yol)) return yanit(200, []);
-  if (/^\/api\/(kanal|grup)\//.test(yol)) return yanit(501, HENUZ_YOK);
+  if (yol === '/api/kanal/gecmis') return yanit(200, kanal.gecmis());
+  if (yol === '/api/kanal/yukle') return yanit(200, kanal.yukle(q.get('dosya')));
+  if (yol === '/api/kanal/disa') {
+    const ad = q.get('dosya'), d = kanal.yukle(ad);
+    const cikti = ((d.genel.ad || 'kanal').replace(/[^\p{L}\p{N}_-]+/gu, '-').replace(/^-+|-+$/g, '') || 'kanal') + '-' + ad.split('/')[1].replace('.json', '.md');
+    return yanit(200, kanal.raporMd(d), 'text/markdown; charset=utf-8', { 'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(cikti)}` });
+  }
+  if (yol === '/api/grup/gecmis') return yanit(200, []);
+  if (/^\/api\/grup\//.test(yol)) return yanit(501, HENUZ_YOK);
   return yanit(404, { hata: 'bulunamadı' });
 }
 
@@ -190,6 +199,13 @@ async function post(u, g, kapat) {
   const yol = u.pathname;
   if (yol === '/api/tara') return yanit(200, isBaslat(g));
   if (yol === '/api/kanal-ara') return yanit(200, isBaslat(g, kanalAra.kanalAra));
+  if (yol === '/api/kanal/analiz') return yanit(200, isBaslat(g, kanal.analiz));
+  if (yol === '/api/kanal/kayit') return yanit(200, kanal.kayit(g.dosya, g.kayitli ?? true));
+  if (yol === '/api/kanal/baslik-gemini') return yanit(200, isBaslat(g, kanal.baslikGemini));
+  if (yol === '/api/kanal/baslik-uret') {
+    if (!(g.konu || '').trim()) return yanit(400, { hata: 'Önce video konusunu yaz' });
+    return yanit(200, await baslikAnaliz.baslikUret(kanal.yukle(g.dosya), g.konu.trim(), parseInt(g.adet || 10, 10)));
+  }
   if (yol === '/api/kanal-ara/kayit') return yanit(200, kanalAra.kayit(g.dosya, g.kayitli ?? true));
   if (yol === '/api/iptal') { const i = ISLER.get(g.id); if (i) i.iptal.iptal = true; return yanit(200, { tamam: !!i }); }
   if (yol === '/api/kapat') {
@@ -242,7 +258,7 @@ async function post(u, g, kapat) {
     fs.writeFileSync(DOSYA.hazir, JSON.stringify(liste, null, 1), 'utf8');
     return yanit(200, liste);
   }
-  if (/^\/api\/(kanal|grup)(\/|$)/.test(yol)) return yanit(501, HENUZ_YOK);
+  if (/^\/api\/grup(\/|$)/.test(yol)) return yanit(501, HENUZ_YOK);
   return yanit(404, { hata: 'bulunamadı' });
 }
 
