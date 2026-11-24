@@ -49,7 +49,7 @@ export const HIZMETLER = {
     kullanim: 'Aynı yapay zekâ işleri, tek model (akıl yürüten model: yavaş ama dikkatli). Her hesabın günlük ücretsiz nöron bütçesi var; ' +
       'kotası dolan hesabın yerine sıradaki geçer.',
     link: 'https://dash.cloudflare.com/?to=/:account/api-tokens',
-    adimlar: "Cloudflare paneli → **Account API Tokens** → Workers AI izinli token oluştur. Eklerken **Account ID ve token'ı aralarında boşlukla** yapıştır " +
+    adimlar: "Cloudflare paneli → **Account API Tokens** → Workers AI izinli token oluştur. Eklerken **Account ID** ve **API token**'ı aşağıdaki ayrı kutulara yapıştır " +
       '(Account ID panelin sağ altında yazar). Test düğmesi yalnızca token\'ı doğrular, nöron harcamaz.',
     alan: 'cf_token',
   },
@@ -324,7 +324,7 @@ export async function ekle(hizmet, token, ad = '') {
   let kimlik;
   if (hizmet === 'cloudflare') {
     const p = String(token || '').trim().split(/[\s:;,]+/).filter(Boolean);
-    if (p.length !== 2) return { tamam: false, hata: "Account ID ve token'ı aralarında boşlukla yapıştır" };
+    if (p.length !== 2) return { tamam: false, hata: "Account ID ve API token'ı ayrı kutulara, tamamını yapıştır (içlerinde boşluk olmamalı)" };
     kimlik = p;
     token = p[1];
   } else {

@@ -66,6 +66,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .kota i.dolu{background:var(--danger)}
 .aktifrozet{font-size:11px;padding:1px 7px;border-radius:var(--pill);background:var(--primary);color:#fff;margin-left:6px}
 .ekleform{display:grid;grid-template-columns:minmax(120px,180px) 1fr auto;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--hair)}
+.ekleform.cf{grid-template-columns:minmax(120px,170px) minmax(160px,1fr) minmax(160px,1fr) auto}
 @media (max-width:900px){.hesap{grid-template-columns:auto 1fr auto}.hesap .maske,.hesap .durum{grid-column:2}.ekleform{grid-template-columns:1fr}}
 .kapat{margin-left:auto;width:32px;height:32px;display:grid;place-items:center;border:1px solid transparent;border-radius:var(--r-md);background:transparent;color:var(--ink-subtle);cursor:pointer;flex:none}
 .kapat svg{width:16px;height:16px}
@@ -1273,9 +1274,10 @@ async function hesaplarCiz(){
           <div class="durum">Kontrol ediliyor…</div>
           <div style="display:flex;gap:6px"><button class="btn sm" data-test>Test</button><button class="btn sm" data-sil>Sil</button></div>
         </div>`).join('') : '<p class="hint">Henüz hesap yok. Aşağıdan ekle.</p>'}
-      <div class="ekleform">
-        <input class="in" data-yeni-ad placeholder="Hesap adı (isteğe bağlı)" title="Boş bırakılırsa Apify kullanıcı adı kullanılır">
-        <input class="in" data-yeni-token type="password" placeholder="${h.id==='gemini' ? 'Anahtarı yapıştır' : h.id==='evren' ? 'Token\'ı yapıştır (evr…)' : h.id==='cloudflare' ? 'Account ID ve token (aralarında boşluk)' : 'Token\'ı yapıştır (apify_api_…)'}" autocomplete="off">
+      <div class="ekleform${h.id==='cloudflare' ? ' cf' : ''}">
+        <input class="in" data-yeni-ad placeholder="Hesap adı (isteğe bağlı)" title="Boş bırakılırsa otomatik bir ad verilir">
+        ${h.id==='cloudflare' ? '<input class="in" data-yeni-hesap placeholder="Account ID" autocomplete="off" spellcheck="false" title="Cloudflare panelinde, hesap ana sayfasının sağ alt köşesinde yazar (32 karakter)">' : ''}
+        <input class="in" data-yeni-token type="password" placeholder="${h.id==='gemini' ? 'Anahtarı yapıştır' : h.id==='evren' ? 'Token\'ı yapıştır (evr…)' : h.id==='cloudflare' ? 'API token' : 'Token\'ı yapıştır (apify_api_…)'}" autocomplete="off">
         <button class="btn pri" data-ekle>Ekle ve doğrula</button>
       </div>`}
       <p class="hint" data-mesaj></p>
@@ -1311,8 +1313,11 @@ $('#hizmetler').addEventListener('click', async e => {
     return hesaplarCiz();
   }
   if (e.target.matches('[data-ekle]')) {
-    const token = kart.querySelector('[data-yeni-token]').value.trim(), ad = kart.querySelector('[data-yeni-ad]').value.trim();
+    const hesapKutu = kart.querySelector('[data-yeni-hesap]');
+    if (hesapKutu && !hesapKutu.value.trim()) return hesapKutu.focus();
+    let token = kart.querySelector('[data-yeni-token]').value.trim(); const ad = kart.querySelector('[data-yeni-ad]').value.trim();
     if (!token) return kart.querySelector('[data-yeni-token]').focus();
+    if (hesapKutu) token = hesapKutu.value.trim() + ' ' + token; // sunucu "AccountID token" biçimini bekliyor
     e.target.disabled = true; mesaj.textContent = 'Doğrulanıyor…';
     const r = await post('/api/hesaplar/ekle', {hizmet, token, ad}).catch(err => ({tamam:false, hata:err.message}));
     e.target.disabled = false;
