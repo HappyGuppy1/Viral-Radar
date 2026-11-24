@@ -951,7 +951,7 @@ const skorMetni = s => s>=100 ? Math.round(s)+'x' : nf1.format(s)+'x';
 function listeCiz(){
   const el = $('#liste');
   $('#araclar').classList.toggle('hidden', !veri);
-  if (!veri) { el.innerHTML = `<div class="empty"><h2>Henüz tarama yok</h2>Küçük kanallarda patlayan videoları bulmak için:<br><ol><li>Soldaki kutuya konuları yaz</li><li>Zamanı ve video türünü seç</li><li><b>Tara</b>'ya bas (yaklaşık 1 dakika)</li></ol></div>`; return; }
+  if (!veri) { el.innerHTML = `<div class="empty"><h2>Henüz tarama yok</h2>Küçük kanallarda patlayan videoları bulmak için:<br><ol><li>Soldaki kutuya konuları yaz</li><li>Zamanı ve video türünü seç</li><li><b>Tara</b>'ya bas</li></ol></div>`; return; }
   const l = filtreli();
   if (!l.length) { el.innerHTML = `<div class="empty"><h2>Sonuç yok</h2>Filtreleri kapat ya da “En az kaç kat” değerini düşürüp yeniden tara.</div>`; return; }
   if (gorunum === 'tablo') return tabloCiz(l);

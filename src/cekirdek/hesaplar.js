@@ -200,11 +200,18 @@ async function evrenUret(istem, sicaklik) {
   for (const [ad, token] of hesaplar('evren')) {
     const govde = { model: EVREN_MODEL, messages: [{ role: 'user', content: istem }], temperature: sicaklik,
       reasoning_effort: 'low', max_tokens: 32768, stream: true, stream_options: { include_usage: true } };
-    let r;
-    try { r = await evrenIstek('chat/completions', token, govde, 420_000); }
-    catch (h) { sonHata = `EVREN ${ad}/${EVREN_MODEL}: ${String(h.message).slice(0, 100)}`; continue; }
+    let r, gec = false;
+    // 429 = EVREN "çok fazla istek, biraz bekle" diyor (eşzamanlı paketlerde olur): aynı hesap, aynı modelle bekleyip yeniden dene
+    for (const bekle of [0, 5000, 15000]) {
+      if (bekle) await new Promise(c => setTimeout(c, bekle));
+      try { r = await evrenIstek('chat/completions', token, govde, 420_000); }
+      catch (h) { sonHata = `EVREN ${ad}/${EVREN_MODEL}: ${String(h.message).slice(0, 100)}`; gec = true; break; }
+      if (r.status !== 429) break;
+      sonHata = `EVREN ${ad}/${EVREN_MODEL}: HTTP 429 (çok fazla istek; bekleyip yeniden denendi)`;
+    }
+    if (gec) continue;
     if (!r.ok) {
-      sonHata = `EVREN ${ad}/${EVREN_MODEL}: HTTP ${r.status}`;
+      if (r.status !== 429) sonHata = `EVREN ${ad}/${EVREN_MODEL}: HTTP ${r.status}`;
       if ([401, 402, 403, 429].includes(r.status) || r.status >= 500) continue; // sıradaki hesap, aynı model
       throw new HesapYok(sonHata);
     }
@@ -295,8 +302,24 @@ export function aiOncelikYap(hizmet) {
   return { tamam: true };
 }
 
+// Yapay zekâ istekleri tek sıradan geçer: aynı anda en fazla AI_ES_ZAMANLI istek gider, diğerleri sırasını bekler.
+// Konu kontrolü / kanal ilgisi paketleri hepsi birden gönderilince EVREN "çok fazla istek" (429) veriyordu.
+const AI_ES_ZAMANLI = 2;
+let aiCalisan = 0;
+const aiBekleyen = [];
+async function aiSira(is_) {
+  if (aiCalisan >= AI_ES_ZAMANLI) await new Promise(c => aiBekleyen.push(c));
+  aiCalisan++;
+  try { return await is_(); }
+  finally { aiCalisan--; aiBekleyen.shift()?.(); }
+}
+
 /** Yapay zekâ ile JSON üretimi: YALNIZCA seçili hizmet. [yanıt, kaynak] döndürür. */
 export async function aiUret(istem, sicaklik = 0.4) {
+  return aiSira(() => aiUretTek(istem, sicaklik));
+}
+
+async function aiUretTek(istem, sicaklik) {
   const h = aiOncelik();
   try {
     if (h === 'cloudflare') return await cloudflareUret(istem, sicaklik);

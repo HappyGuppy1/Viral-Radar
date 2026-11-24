@@ -19,7 +19,8 @@ import { kat } from './cekirdek/ortak.js';
 import { AltyaziSiniri } from './cekirdek/youtube.js';
 
 const ARAYUZ = path.join(path.dirname(fileURLToPath(import.meta.url)), 'arayuz');
-const DOSYA_ADI = /^[\w-]+\.json$/;
+// Türkçe konular dosya adına Türkçe harfle girer (osmanlı-tarihi.json): \w yalnızca İngilizce harfi tanıdığı için Unicode harf sınıfı
+const DOSYA_ADI = /^[\p{L}\p{N}_-]+\.json$/u;
 const ISLER = new Map();
 
 // ---------------------------------------------------------------- arka plan işleri
