@@ -3,8 +3,8 @@
 Küçük kanallarda, kanalın kendi normalinin çok üstüne çıkan ("patlayan") YouTube videolarını bulan,
 o konuda içerik üreten kanalları keşfeden ve kanalları analiz eden masaüstü programı.
 
-> **Sürüm 0.1 (erken sürüm).** Şu an **Viral videolar** ve **Kayıtlar** çalışıyor.
-> Kanal bul, Kanal analizi ve Kanal karşılaştır bir sonraki sürümde geliyor.
+> **Sürüm 0.1 (ilk sürüm).** Windows için. Hata bulursan bir [issue](https://github.com/HappyGuppy1/Viral-Radar/issues) aç;
+> **Belgeler\Viral Radar\Kayitlar\viral-radar.log** dosyasını eklersen sorunu bulmak kolaylaşır.
 
 ## Kurulum
 
@@ -32,12 +32,17 @@ Programı kaldırmak bu klasörü silmez.
   karşılaştırır. Normalin en az N katı izlenenleri listeler: kapak, kat, abone, izlenme/saat,
   beğeni oranı, şüpheli durum uyarıları, ilk 60 saniyenin metni (kanca) ve transkript.
   **Başlık analizi** sekmesi patlayan başlıklardaki tarzları, tekrar eden ifadeleri ve kelimeleri çıkarır.
-- **Kanal bul:** *(yakında)* bir konuda video üreten kanalları bulur ve filtreler.
+- **Kanal bul:** Bir konuda video üreten kanalları bulur: kanal araması, konudaki videoların kanalları ve son ayın
+  yeni videoları. Abone aralığı, aktiflik (son yükleme), medyan izlenme, konu odağı ve ülkeye göre süzer;
+  neden elendiklerini de gösterir. Seçtiğin kanalları tek tıkla karşılaştırmaya gönderebilirsin.
 
-**Analiz et** *(yakında)*
+**Analiz et**
 
-- **Kanal analizi:** tek bir kanalın performansı, yayın düzeni, başlıkları, izleyicisi ve büyümesi.
-- **Kanal karşılaştır:** birden çok kanalın ortak başlık kalıpları ve kanal kanal karşılaştırma.
+- **Kanal analizi:** Tek bir kanalın genel bakışı, tüm videoları (kanal normaline göre kat), gidişatı,
+  gün×saat yükleme düzeni, başlık tarzları ve kalıpları, içerik (süre, etiket, bölüm, sponsor izleri),
+  izleyici (en çok tekrar izlenen anlar, en beğenilen yorumlar) ve zamanla büyümesi.
+- **Kanal karşılaştır:** 2–300 kanalı tek tek analiz edip birleştirir: kanalların çoğunda işe yarayan başlık
+  tarzları, birden çok kanalda tutan ifadeler ve kelimeler, süre ve gün etkisi, konu dışı videoların ayıklanması.
 
 **Kayıtlar:** "Raporu kaydet" dediğin tüm sonuçlar tek listede. Program her açılışta boş başlar.
 
@@ -78,6 +83,9 @@ npm run paketle     # dist\Viral-Radar-Setup-x.y.z.exe üretir
 | `src/cekirdek/motor.js` | Viral video taraması: arama, kanal tabanı, skor, ayrıntı, uyarılar, desenler |
 | `src/cekirdek/video_analiz.js` | Taramanın analizi ve sade özeti |
 | `src/cekirdek/baslik_analiz.js` | Başlık tarzları, kalıplar, kelimeler; yapay zekâ derin analizi |
+| `src/cekirdek/kanal_ara.js` | Kanal bul |
+| `src/cekirdek/kanal.js` | Kanal analizi |
+| `src/cekirdek/grup.js` | Kanal karşılaştır |
 | `src/cekirdek/hesaplar.js` | API hesapları ve yapay zekâ çağrıları |
 
 Çekirdek (`src/cekirdek/`) Electron'a bağlı değildir; ileride aynı kodla telefon sürümü yapılabilmesi için

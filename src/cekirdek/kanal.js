@@ -17,7 +17,7 @@ import { havuz, medyan, Sayac, simdiSn, SURE_DILIMLERI, ure, yuvarla, zamanDamga
 
 export const AYRINTILAR = new Onbellek('kanal_videolar', 12);
 const GUNLER = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
-const EN_ESKI_GUN = 5 * 365; // analizler yalnızca son 5 yılın videolarına bakar
+export const EN_ESKI_GUN = 5 * 365; // analizler yalnızca son 5 yılın videolarına bakar
 export const VARSAYILAN = { kanal: '', detay_adet: 60, yorum: true };
 
 const SPONSOR = ure(String.raw`\b(sponsor\w*|use code|promo code|discount code|partnered|indirim kodu|iş birliği)\b`, 'i');
@@ -63,7 +63,7 @@ function komsuSkor(videolar, pencere = 10) {
   });
 }
 
-function gunSaat(videolar) {
+export function gunSaat(videolar) {
   const tablo = Array.from({ length: 7 }, () => new Array(24).fill(0));
   const gunSkor = Array.from({ length: 7 }, () => []);
   for (const v of videolar) {
@@ -279,7 +279,7 @@ export function gecmis() {
   return liste;
 }
 
-function yol(dosya) {
+export function yol(dosya) {
   if (!/^UC[\w-]{22}\/analiz-[\d-]+\.json$/.test(dosya || '')) { const h = new Error('dosya yok'); h.kod = 404; throw h; }
   const y = path.join(DOSYA.kanallar, dosya);
   if (!fs.existsSync(y)) { const h = new Error('dosya yok'); h.kod = 404; throw h; }
@@ -307,7 +307,7 @@ export async function baslikGemini(p, ilerleme = () => {}) {
 }
 
 // ---------------------------------------------------------------- Markdown rapor
-function baslikMd(b) {
+export function baslikMd(b) {
   if (b.yetersiz) return ['', '## Başlık analizi', '', `Yetersiz veri (${b.n} olgun video).`];
   const t = x => (x || '').replace(/\|/g, '/'), k = x => (x !== null && x !== undefined ? `${x}x` : '–');
   let s = ['', '## Başlık analizi', '',

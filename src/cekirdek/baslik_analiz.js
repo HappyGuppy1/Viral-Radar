@@ -5,7 +5,7 @@ import { DURAKLAR, kelimeler, kucuk, medyan, Sayac, ure, yuvarla } from './metin
 import { aiUret } from './hesaplar.js';
 
 export const SURUM = 2;
-const PATLAMA = 2.0;
+export const PATLAMA = 2.0;
 
 const SAYI_SONRASI_DEGIL = String.raw`(?:gün|günlük|günde|ay|ayda|aylık|yıl|yıllık|saat|saatte|dakika|dakikada|dk|saniye|hafta|haftalık|tl|lira|dolar|euro|day|days|hour|hours|minutes?|mins?|seconds?|years?|months?|weeks?|k|m|bin|milyon|x|kat|cm|lt|litre|l)\b`;
 const r = String.raw;
@@ -99,7 +99,7 @@ export function olcu(varL, tum) {
 }
 
 const GUVEN = { 'güçlü': 0, orta: 1, 'zayıf': 2 };
-const siraKarsilastir = (a, b) => GUVEN[a.guven] - GUVEN[b.guven] || (b.kaldirac || 0) - (a.kaldirac || 0);
+export const siraKarsilastir = (a, b) => GUVEN[a.guven] - GUVEN[b.guven] || (b.kaldirac || 0) - (a.kaldirac || 0);
 
 /** Başlıkların ≥%30'unda geçen kelimeler kanalın konusudur (kalıp değil). */
 function konuKelimeleri(videolar) {
