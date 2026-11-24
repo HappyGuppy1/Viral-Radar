@@ -47,7 +47,7 @@ export const HIZMETLER = {
   cloudflare: {
     label: 'Cloudflare Workers AI',
     kullanim: 'Aynı yapay zekâ işleri, tek model (akıl yürüten model: yavaş ama dikkatli). Her hesabın günlük ücretsiz nöron bütçesi var; ' +
-      'kotası dolan hesabın yerine sıradaki geçer. StudioFlow kuruluysa onun Cloudflare hesapları da kendiliğinden kullanılır.',
+      'kotası dolan hesabın yerine sıradaki geçer.',
     link: 'https://dash.cloudflare.com/?to=/:account/api-tokens',
     adimlar: "Cloudflare paneli → **Account API Tokens** → Workers AI izinli token oluştur. Eklerken **Account ID ve token'ı aralarında boşlukla** yapıştır " +
       '(Account ID panelin sağ altında yazar). Test düğmesi yalnızca token\'ı doğrular, nöron harcamaz.',
@@ -61,12 +61,8 @@ const EVREN_MODEL = 'deepseek-v4.1-flash';
 const CF_API = 'https://api.cloudflare.com/client/v4';
 const CF_AZAMI_TOKEN = 16000, CF_ZAMAN = 300_000;
 
-// StudioFlow kuruluysa: varsayılan metin modelleri ve Cloudflare hesapları oradan (tek kaynak)
-const SF_AYAR = path.join(os.homedir(), 'Documents', 'StudioFlow', 'Ayarlar');
-const SF_HESAPLAR = path.join(SF_AYAR, 'api-hesaplari.txt');
-const SF_KOTA = path.join(SF_AYAR, 'kota-bekleme.json');
-const SF_METIN_ORTAK = path.join(os.homedir(), 'AppData', 'Local', 'Programs', 'StudioFlow', 'uygulama', 'studioflow', 'saglayicilar', 'metin_ortak.py');
-const YEDEK_MODEL = { gemini: 'gemini-3.8-flash', cloudflare: '@cf/nvidia/nemotron-3-120b-a12b' };
+// Her hizmet TEK modelle çalışır (başka modele geçilmez)
+const MODELLER = { evren: EVREN_MODEL, gemini: 'gemini-3.8-flash', cloudflare: '@cf/nvidia/nemotron-3-120b-a12b' };
 
 export class HesapYok extends Error {}
 
@@ -108,43 +104,20 @@ export function hesaplar(hizmet) {
   return liste.sort((a, b) => (a[0] !== aktif) - (b[0] !== aktif));
 }
 
-// ---------------------------------------------------------------- Cloudflare hesapları (kendi dosyası + StudioFlow)
-function sfBekleyenler() {
-  try {
-    const d = JSON.parse(fs.readFileSync(SF_KOTA, 'utf8')), simdi = Date.now(), s = {};
-    for (const k of d.hesaplar || []) if (k.hizmet === 'cloudflare' && Date.parse(k.acilis) > simdi) s[k.ad] = k.acilis;
-    return s;
-  } catch { return {}; }
-}
-
-function cfListesi(veri, kaynak, bekleyen = {}) {
+// ---------------------------------------------------------------- Cloudflare hesapları (Account ID + token)
+function cfListesi(veri) {
   const adlar = [...new Set(Object.keys(veri).filter(k => k.startsWith('cloudflare.') && k.split('.').length === 3).map(k => k.split('.')[1]))];
   const aktif = veri['cloudflare.aktif'];
   adlar.sort((a, b) => (a !== aktif) - (b !== aktif));
-  return adlar.map(ad => ({ ad, hesap: veri[`cloudflare.${ad}.cf_account_id`] || '', token: veri[`cloudflare.${ad}.cf_token`] || '',
-    kaynak, bekliyor: bekleyen[ad] || null })).filter(h => h.hesap && h.token);
+  return adlar.map(ad => ({ ad, hesap: veri[`cloudflare.${ad}.cf_account_id`] || '', token: veri[`cloudflare.${ad}.cf_token`] || '' }))
+    .filter(h => h.hesap && h.token);
 }
 
-/** Kendi hesapların önce, sonra StudioFlow'unkiler (kota bekleyenler varsayılan olarak çıkarılır). */
-export function cfHesaplari(bekleyenlerDahil = false) {
-  const kendi = cfListesi(oku(), 'viral-radar');
-  const sf = cfListesi(anahtarDosyasiOku(SF_HESAPLAR), 'studioflow', sfBekleyenler())
-    .filter(h => !kendi.some(k => k.token === h.token));
-  const l = [...kendi, ...sf];
-  return bekleyenlerDahil ? l : l.filter(h => !h.bekliyor);
-}
+/** Viral Radar'ın kendi ayar dosyasındaki Cloudflare hesapları, aktif hesap başta. */
+export const cfHesaplari = () => cfListesi(oku());
 
 // ---------------------------------------------------------------- model seçimi
-function sfModel(hizmet) {
-  try {
-    const kod = fs.readFileSync(SF_METIN_ORTAK, 'utf8');
-    const blok = kod.slice(kod.indexOf(`"${hizmet}": {`));
-    const m = blok.match(/"models":\s*\[\s*"([^"]+)"/);
-    if (m) return m[1];
-  } catch { /* StudioFlow kurulu değil */ }
-  return YEDEK_MODEL[hizmet];
-}
-export const aiModel = h => (h === 'evren' ? EVREN_MODEL : sfModel(h));
+export const aiModel = h => MODELLER[h];
 
 // ---------------------------------------------------------------- testler
 async function apifyIstek(yol, token, govde, zaman = 30_000) {
@@ -340,7 +313,7 @@ export function liste() {
   return Object.entries(HIZMETLER).map(([h, bilgi]) => {
     const { alan, ...gorunen } = bilgi;
     const hesapListesi = h === 'cloudflare'
-      ? cfHesaplari(true).map(x => ({ ad: x.ad, maske: maskele(x.token), bekliyor: x.bekliyor, kaynak: x.kaynak }))
+      ? cfHesaplari().map(x => ({ ad: x.ad, maske: maskele(x.token) }))
       : hesaplar(h).map(([ad, t]) => ({ ad, maske: maskele(t) }));
     return { ...gorunen, id: h, aktif: veri[`${h}.aktif`] || null, ai: AI_HIZMETLER.includes(h), oncelikli: h === oncelik,
       model: AI_HIZMETLER.includes(h) ? aiModel(h) : null, hesaplar: hesapListesi };
@@ -362,7 +335,7 @@ export async function ekle(hizmet, token, ad = '') {
   const test = await hizmetTest(hizmet, kimlik || token);
   if (!test.gecerli) return { tamam: false, hata: test.hata || 'Token doğrulanamadı' };
   const veri = oku(), alan = HIZMETLER[hizmet].alan;
-  const mevcut = hizmet === 'cloudflare' ? cfListesi(veri, 'viral-radar') : hesaplar(hizmet).map(([a, t]) => ({ ad: a, token: t }));
+  const mevcut = hizmet === 'cloudflare' ? cfListesi(veri) : hesaplar(hizmet).map(([a, t]) => ({ ad: a, token: t }));
   if (mevcut.some(h => h.token === token)) return { tamam: false, hata: 'Bu token zaten ekli' };
   let temel = hesapAdi(ad || test.kullanici || (AI_HIZMETLER.includes(hizmet) ? 'anahtar' : 'hesap')), yeniAd = temel;
   for (let i = 2; mevcut.some(h => h.ad === yeniAd); i++) yeniAd = `${temel}-${i}`;
@@ -375,7 +348,7 @@ export async function ekle(hizmet, token, ad = '') {
 
 export function sil(hizmet, ad) {
   const veri = oku();
-  if (hizmet === 'cloudflare' && !veri[`cloudflare.${ad}.cf_token`]) return { tamam: false, hata: 'StudioFlow hesapları buradan silinmez' };
+  if (!veri[`${hizmet}.${ad}.${HIZMETLER[hizmet].alan}`]) return { tamam: false, hata: 'Hesap bulunamadı' };
   delete veri[`${hizmet}.${ad}.${HIZMETLER[hizmet].alan}`];
   if (hizmet === 'cloudflare') delete veri[`cloudflare.${ad}.cf_account_id`];
   if (veri[`${hizmet}.aktif`] === ad) {
@@ -388,7 +361,9 @@ export function sil(hizmet, ad) {
 
 export function aktifYap(hizmet, ad) {
   const veri = oku();
-  if (!veri[`${hizmet}.${ad}.${HIZMETLER[hizmet].alan}`]) return { tamam: false, hata: 'Hesap yok' };
+  if (!veri[`${hizmet}.${ad}.${HIZMETLER[hizmet].alan}`]) {
+    return { tamam: false, hata: 'Hesap yok' };
+  }
   veri[`${hizmet}.aktif`] = ad;
   yaz(veri);
   return { tamam: true };
@@ -396,7 +371,7 @@ export function aktifYap(hizmet, ad) {
 
 export async function testEt(hizmet, ad) {
   if (hizmet === 'cloudflare') {
-    const h = cfHesaplari(true).find(x => x.ad === ad);
+    const h = cfHesaplari().find(x => x.ad === ad);
     return h ? cfTest([h.hesap, h.token]) : { gecerli: false, hata: 'Hesap yok' };
   }
   const t = new Map(hesaplar(hizmet)).get(ad);

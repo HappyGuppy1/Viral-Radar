@@ -78,7 +78,7 @@ button,input,select,textarea{font:inherit;color:inherit}
    linear.app DESIGN.md: top-nav 56px canvas, seçili = surface-2 lift (lavanta değil), grup adı = eyebrow */
 .brand img{width:26px;height:26px;border-radius:7px;display:block}
 .anamenu{display:flex;align-items:center;gap:2px;overflow-x:auto;min-width:0}
-.grupad{font-size:13px;font-weight:500;letter-spacing:.4px;color:var(--ink-tertiary);padding:0 6px 0 2px;white-space:nowrap}
+.grupad{font-size:11px;font-weight:600;letter-spacing:.9px;text-transform:uppercase;color:var(--ink-subtle);padding:0 8px 0 2px;white-space:nowrap;cursor:default;user-select:none}
 .ayrac{flex:none;width:1px;height:20px;background:var(--hair);margin:0 12px}
 .sayfa{padding:6px 12px;border-radius:var(--pill);border:0;background:transparent;color:var(--ink-subtle);cursor:pointer;font-weight:500;white-space:nowrap}
 .sayfa:hover{color:var(--ink)}
@@ -1258,14 +1258,14 @@ async function hesaplarCiz(){
       <div class="seg" style="width:auto;display:inline-flex">${ai.map(h => `<button data-ai-sec="${esc(h.id)}" class="${h === secili ? 'on' : ''}">${esc(h.label)}</button>`).join('')}</div>
       <p class="hint" style="margin-top:10px">Model: <b style="color:var(--ink-muted)">${esc(secili?.model || '')}</b></p>
     </div>` + liste.map(h => `
-    <div class="hizmet" data-hizmet="${esc(h.id)}" ${h.harici ? 'data-harici' : ''}>
+    <div class="hizmet" data-hizmet="${esc(h.id)}">
       <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
         <div><h2>${esc(h.label)}</h2><p class="kul">${kalin(h.kullanim)}</p></div>
         <a class="btn sm" href="${esc(h.link)}" target="_blank" rel="noopener">Token al ↗</a>
       </div>
       ${h.ai ? `<p class="kul" style="margin:0 0 12px">Model: <b>${esc(h.model)}</b>${h.oncelikli ? ' <span class="aktifrozet">kullanılıyor</span>' : ''}</p>` : ''}
       <p class="adim">${kalin(h.adimlar)}</p>
-      ${h.harici ? hariciHesaplar(h) : `${h.hesaplar.length ? h.hesaplar.map(a => `
+      ${`${h.hesaplar.length ? h.hesaplar.map(a => `
         <div class="hesap" data-ad="${esc(a.ad)}">
           <input type="radio" name="aktif-${esc(h.id)}" ${a.ad===h.aktif?'checked':''} title="Aktif hesap yap">
           <div class="ad">${esc(a.ad)}${a.ad===h.aktif?'<span class="aktifrozet">aktif</span>':''}</div>
@@ -1275,24 +1275,12 @@ async function hesaplarCiz(){
         </div>`).join('') : '<p class="hint">Henüz hesap yok. Aşağıdan ekle.</p>'}
       <div class="ekleform">
         <input class="in" data-yeni-ad placeholder="Hesap adı (isteğe bağlı)" title="Boş bırakılırsa Apify kullanıcı adı kullanılır">
-        <input class="in" data-yeni-token type="password" placeholder="${h.id==='gemini' ? 'Anahtarı yapıştır' : h.id==='evren' ? 'Token\'ı yapıştır (evr…)' : 'Token\'ı yapıştır (apify_api_…)'}" autocomplete="off">
+        <input class="in" data-yeni-token type="password" placeholder="${h.id==='gemini' ? 'Anahtarı yapıştır' : h.id==='evren' ? 'Token\'ı yapıştır (evr…)' : h.id==='cloudflare' ? 'Account ID ve token (aralarında boşluk)' : 'Token\'ı yapıştır (apify_api_…)'}" autocomplete="off">
         <button class="btn pri" data-ekle>Ekle ve doğrula</button>
       </div>`}
       <p class="hint" data-mesaj></p>
     </div>`).join('');
-  $$('.hizmet:not([data-harici]) .hesap').forEach(hesapTest);  // StudioFlow hesapları (30 tane) otomatik test edilmez
-}
-// StudioFlow'dan okunan hesaplar (Cloudflare): özet + açılır liste, yalnızca elle Test
-function hariciHesaplar(h){
-  const l = h.hesaplar, bekleyen = l.filter(a => a.bekliyor);
-  const saat = iso => new Date(iso).toLocaleString('tr-TR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'});
-  if (!l.length) return '<p class="hint">StudioFlow’da Cloudflare hesabı bulunamadı. StudioFlow › API hesapları sayfasından ekle.</p>';
-  return `<p class="kul" style="margin:0 0 8px"><b>${l.length - bekleyen.length}</b> hesap kullanılabilir${bekleyen.length ? ` · <b>${bekleyen.length}</b> kota bekliyor (atlanır)` : ''} · kaynak: StudioFlow</p>
-    <details class="fold" style="margin-top:6px"><summary>Hesapları göster</summary>
-    ${l.map(a => `<div class="hesap" data-ad="${esc(a.ad)}" style="grid-template-columns:minmax(120px,180px) minmax(150px,200px) 1fr auto">
-      <div class="ad">${esc(a.ad)}</div><div class="maske">${esc(a.maske)}</div>
-      <div class="durum">${a.bekliyor ? `<span style="color:var(--warn)">kota bekliyor · açılış ${esc(saat(a.bekliyor))}</span>` : 'hazır'}</div>
-      <div><button class="btn sm" data-test>Test</button></div></div>`).join('')}</details>`;
+  $$('.hizmet .hesap').forEach(hesapTest);
 }
 async function hesapTest(satir){
   const hizmet = satir.closest('.hizmet').dataset.hizmet, ad = satir.dataset.ad, el = satir.querySelector('.durum');
@@ -1312,10 +1300,16 @@ $('#hizmetler').addEventListener('click', async e => {
   if (e.target.matches('[data-test]')) return hesapTest(satir);
   if (e.target.matches('[data-sil]')) {
     if (!confirm(`“${satir.dataset.ad}” hesabı silinsin mi?`)) return;
-    await post('/api/hesaplar/sil', {hizmet, ad: satir.dataset.ad}); return hesaplarCiz();
+    const r = await post('/api/hesaplar/sil', {hizmet, ad: satir.dataset.ad}).catch(err => ({tamam: false, hata: err.message}));
+    if (!r.tamam) { mesaj.innerHTML = `<span style="color:var(--danger)">Silinemedi: ${esc(r.hata || 'bilinmeyen hata')}</span>`; return; }
+    return hesaplarCiz();
   }
   if (e.target.matches('[data-oncelik]')) { await post('/api/hesaplar/oncelik', {hizmet}); return hesaplarCiz(); }
-  if (e.target.matches('input[type=radio]')) { await post('/api/hesaplar/aktif', {hizmet, ad: satir.dataset.ad}); return hesaplarCiz(); }
+  if (e.target.matches('input[type=radio]')) {
+    const r = await post('/api/hesaplar/aktif', {hizmet, ad: satir.dataset.ad}).catch(err => ({tamam: false, hata: err.message}));
+    if (!r.tamam) { mesaj.innerHTML = `<span style="color:var(--danger)">${esc(r.hata || 'Aktif yapılamadı')}</span>`; }
+    return hesaplarCiz();
+  }
   if (e.target.matches('[data-ekle]')) {
     const token = kart.querySelector('[data-yeni-token]').value.trim(), ad = kart.querySelector('[data-yeni-ad]').value.trim();
     if (!token) return kart.querySelector('[data-yeni-token]').focus();
